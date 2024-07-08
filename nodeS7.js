@@ -65,6 +65,7 @@ function NodeS7(opts) {
 	self.doNotOptimize = false;
 	self.connectCallback = undefined;
 	self.readDoneCallback = undefined;
+	self.readDoneCallbackArgs = undefined;
 	self.writeDoneCallback = undefined;
 	self.connectTimeout = undefined;
 	self.PDUTimeout = undefined;
@@ -569,12 +570,12 @@ NodeS7.prototype.removeItemsNow = function(arg) {
 	//	self.prepareReadPacket();
 }
 
-NodeS7.prototype.readAllItems = function(arg) {
+NodeS7.prototype.readAllItems = function(arg, ...additionalArgs) {
 	var self = this;
 
 	outputLog("Reading All Items (readAllItems was called)", 1, self.connectionID);
-
 	if (typeof arg === "function") {
+		self.readDoneCallbackArgs = additionalArgs;
 		self.readDoneCallback = arg;
 	} else {
 		self.readDoneCallback = doNothing;
@@ -975,7 +976,7 @@ NodeS7.prototype.sendReadPacket = function() {
 
 	if (!self.readPacketArray.length && (typeof(self.readDoneCallback) === "function")) {
 		// Call back the callback if we are being asked for zero tags - for consistency
-		self.readDoneCallback(false, {}); // Data is second argument and shouldn't be undefined
+		self.readDoneCallback(false, {}, ...self.readDoneCallbackArgs); // Data is second argument and shouldn't be undefined
 	}
 
 	for (i = 0; i < self.readPacketArray.length; i++) {
@@ -1455,7 +1456,7 @@ NodeS7.prototype.readResponse = function(data, foundSeqNum) {
 		// Inform our user that we are done and that the values are ready for pickup.
 		outputLog("We are calling back our readDoneCallback.", 1, self.connectionID);
 		if (typeof (self.readDoneCallback) === 'function') {
-			self.readDoneCallback(anyBadQualities, dataObject);
+			self.readDoneCallback(anyBadQualities, dataObject, ...self.readDoneCallbackArgs);
 		}
 
 		if (!self.isReading() && self.writeInQueue) {

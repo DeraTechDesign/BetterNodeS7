@@ -1,12 +1,14 @@
 {
   "name": "betternodes7",
   "description": "Routine to communicate with Siemens S7 PLCs",
-  "version": "0.3.18",
+  "version": "0.4.0-beta.0",
   "author": {
     "name": "Dana Moffit",
     "email": "nodejsplc@gmail.com"
   },
-  "contributors": ["DeraTechDesign"],
+  "contributors": [
+    "DeraTechDesign"
+  ],
   "keywords": [
     "S7",
     "Siemens",

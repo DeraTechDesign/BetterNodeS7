@@ -64,9 +64,11 @@ function NodeS7(opts) {
 	self.maxGap = 5;
 	self.doNotOptimize = false;
 	self.connectCallback = undefined;
+	self.connectDoneCallbackArgs = undefined;
 	self.readDoneCallback = undefined;
 	self.readDoneCallbackArgs = undefined;
 	self.writeDoneCallback = undefined;
+	self.writeDoneCallbackArgs = undefined;
 	self.connectTimeout = undefined;
 	self.PDUTimeout = undefined;
 	self.globalTimeout = 1500; // In many use cases we will want to increase this
@@ -115,7 +117,7 @@ NodeS7.prototype.setTranslationCB = function(cb) {
 	}
 }
 
-NodeS7.prototype.initiateConnection = function(cParam, callback) {
+NodeS7.prototype.initiateConnection = function(cParam, callback, ...callbackArgs) {
 	var self = this;
 	if (cParam === undefined) { cParam = { port: 102, host: '192.168.8.106' }; }
 	outputLog('Initiate Called - Connecting to PLC with address and parameters:');
@@ -145,6 +147,7 @@ NodeS7.prototype.initiateConnection = function(cParam, callback) {
 	}
 	self.connectionParams = cParam;
 	self.connectCallback = callback;
+	self.connectDoneCallbackArgs = callbackArgs;
 	self.connectCBIssued = false;
 	self.connectNow(self.connectionParams, false);
 }
@@ -225,7 +228,7 @@ NodeS7.prototype.connectError = function(e) {
 	outputLog('We Caught a connect error ' + e.code, 0, self.connectionID);
 	if ((!self.connectCBIssued) && (typeof (self.connectCallback) === "function")) {
 		self.connectCBIssued = true;
-		self.connectCallback(e);
+		self.connectCallback(e, ...self.connectDoneCallbackArgs);
 	}
 	self.isoConnectionState = 0;
 }
@@ -430,7 +433,7 @@ NodeS7.prototype.onPDUReply = function(theData) {
 		//self.isoclient.removeAllListeners('error');
 		if ((!self.connectCBIssued) && (typeof (self.connectCallback) === "function")) {
 			self.connectCBIssued = true;
-			self.connectCallback();
+			self.connectCallback(null, ...self.connectDoneCallbackArgs);
 		}
 	}else{
 		outputLog('INVALID Telegram ', 0, self.connectionID);
@@ -448,7 +451,7 @@ NodeS7.prototype.onPDUReply = function(theData) {
 }
 
 
-NodeS7.prototype.writeItems = function(arg, value, cb) {
+NodeS7.prototype.writeItems = function(arg, value, cb, ...cbArgs) {
 	var self = this, i;
 	outputLog("Preparing to WRITE " + arg + " to value " + value, 0, self.connectionID);
 	if (self.isWriting() || self.writeInQueue) {
@@ -458,6 +461,7 @@ NodeS7.prototype.writeItems = function(arg, value, cb) {
 
 	if (typeof cb === "function") {
 		self.writeDoneCallback = cb;
+		self.writeDoneCallbackArgs = cbArgs;
 	} else {
 		self.writeDoneCallback = doNothing;
 	}
@@ -1351,7 +1355,7 @@ NodeS7.prototype.writeResponse = function(data, foundSeqNum) {
 		}
 		outputLog('We are calling back our writeDoneCallback.',1,self.connectionID);
 		if (typeof(self.writeDoneCallback) === 'function') {
-			self.writeDoneCallback(anyBadQualities);
+			self.writeDoneCallback(anyBadQualities, self.writeDoneCallbackArgs);
 		}
 	}
 }
@@ -1477,7 +1481,7 @@ NodeS7.prototype.onClientDisconnect = function() {
 	// If this is the case we need to issue the Connect CB in order to keep trying.
 	if ((!self.connectCBIssued) && (typeof (self.connectCallback) === "function")) {
 		self.connectCBIssued = true;
-		self.connectCallback("Error - TCP connected, ISO didn't");
+		self.connectCallback("Error - TCP connected, ISO didn't", ...self.connectCallbackArgs);
 	}
 
 	// We used to call self.connectionCleanup() - in other words we would give up.

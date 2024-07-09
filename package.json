@@ -1,7 +1,7 @@
 {
   "name": "betternodes7",
   "description": "Routine to communicate with Siemens S7 PLCs",
-  "version": "0.4.0-beta.0",
+  "version": "0.5.0-beta.0",
   "author": {
     "name": "Dana Moffit",
     "email": "nodejsplc@gmail.com"

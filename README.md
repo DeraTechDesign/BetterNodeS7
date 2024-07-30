@@ -12,10 +12,7 @@ Fully test everything you do.  In situations where writing to a random area of m
 Installation
 =======
 Using npm:
-* `npm install nodes7`
-
-Using yarn:
-* `yarn add nodes7`
+* `npm install betternodes7`
 
 Optimization
 =======
@@ -46,7 +43,7 @@ Examples
 ======
 
 ```js
-var nodes7 = require('nodes7'); // This is the package name, if the repository is cloned you may need to require 'nodeS7' with uppercase S
+var nodes7 = require('betternodes7'); // This is the package name, if the repository is cloned you may need to require 'nodeS7' with uppercase S
 var conn = new nodes7;
 var doneReading = false;
 var doneWriting = false;
@@ -64,11 +61,13 @@ var variables = {
       TEST10: 'DB1,X14.0.8'  // Array of 8 bits in a data block
 };
 
-conn.initiateConnection({ port: 102, host: '192.168.0.2', rack: 0, slot: 1, debug: false }, connected); // slot 2 for 300/400, slot 1 for 1200/1500, change debug to true to get more info
+conn.initiateConnection({ port: 102, host: '192.168.0.2', rack: 0, slot: 1, debug: false }, connected, "example variable"); // slot 2 for 300/400, slot 1 for 1200/1500, change debug to true to get more info
 // conn.initiateConnection({port: 102, host: '192.168.0.2', localTSAP: 0x0100, remoteTSAP: 0x0200, timeout: 8000, doNotOptimize: true}, connected);
 // local and remote TSAP can also be directly specified instead. The timeout option specifies the TCP timeout.
+// you can pass any number of variables or objects to the callback. This is not necessary. It could be conn.initiateConnection(connectionJson, connected);
 
-function connected(err) {
+function connected(err, param) {
+  console.log(param);
   if (typeof(err) !== "undefined") {
     // We have an error. Maybe the PLC is not reachable.
     console.log(err);
@@ -81,10 +80,11 @@ function connected(err) {
   // conn.writeItems(['TEST5', 'TEST6'], [ 867.5309, 9 ], valuesWritten); // You can write an array of items as well.
   // conn.writeItems('TEST7', [666, 777], valuesWritten); // You can write a single array item too.
   conn.writeItems('TEST3', true, valuesWritten); // This writes a single boolean item (one bit) to true
-  conn.readAllItems(valuesReady);
+  conn.readAllItems(valuesReady, "done"); // This will read the items we added to the read list. You can pass any number of variables or objects to the callback. This is not necessary. It can be conn.readAllItems(valuesReady);
 }
 
-function valuesReady(anythingBad, values) {
+function valuesReady(anythingBad, values, param) {
+  console.log(param);
   if (anythingBad) { console.log("SOMETHING WENT WRONG READING VALUES!!!!"); }
   console.log(values);
   doneReading = true;
@@ -110,7 +110,7 @@ API
  - [readAllItems()](#read-all-items)
 
 
-## <a name="initiate-connection"></a>nodes7.initiateConnection(options, callback)
+## <a name="initiate-connection"></a>nodes7.initiateConnection(options, callback, ...args)
 #### Description
 Connects to a PLC.
 
@@ -128,13 +128,16 @@ Connects to a PLC.
 | localTSAP  | hex      | undefined     |
 | remoteTSAP | hex      | undefined     |
 
-`callback(err)`
+`callback(err, ...args)`
 <dl>
   <dt>err</dt>
   <dd>
   err is either an error object, or undefined on successful connection.
   </dd>
 </dl>
+  
+  `...args`
+  Any number of arguments can be passed to the callback.  This is not necessary.  It could be `conn.initiateConnection(connectionJson, connected);`
 
 ## <a name="drop-connection"></a>nodes7.dropConnection(callback)
 #### Description
@@ -200,7 +203,7 @@ Removes `items` to the internal read polling list.
 
 If `items` is not defined then all items are removed.
 
-## <a name="write-items"></a>nodes7.writeItems(items, values, callback)
+## <a name="write-items"></a>nodes7.writeItems(items, values, callback, ...args)
 #### Description
 Writes `items` to the PLC using the corresponding `values` and calls `callback` when done.
 
@@ -213,19 +216,24 @@ If `items` is a single string, `values` should then be a single item.
 
 If `items` is an array of strings, `values` must also be an array of values.
 
-`callback(err)`
+`callback(err, ...args)`
 
 <dl>
   <dt>err</dt>
   <dd>a boolean indicating if ANY of the items have "bad quality".</dd>
 </dl>
 
-## <a name="read-all-items"></a>nodes7.readAllItems(callback)
+`...args`
+Any number of arguments can be passed to the callback.  This is not necessary.  It could be `conn.writeItems('TEST5', 867.5309, valuesWritten);`
+
+
+
+## <a name="read-all-items"></a>nodes7.readAllItems(callback, ...args)
 #### Description
 Reads the internal polling list and calls `callback` when done.
 
 #### Arguments
-`callback(err, values)` 
+`callback(err, values, ...args)` 
 
 <dl>
   <dt>err</dt>
@@ -233,3 +241,6 @@ Reads the internal polling list and calls `callback` when done.
   <dt>values</dt>
   <dd>an object containing the values being read as keys and their value (from the PLC) as the value.</dd>
 </dl>
+  
+  `...args`
+  Any number of arguments can be passed to the callback.  This is not necessary.  It could be `conn.readAllItems(valuesReady);`
